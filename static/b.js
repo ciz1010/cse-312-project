@@ -1,3 +1,265 @@
-function welcome() {
-    document.getElementById("paragraph").innerHTML += "<br/>JavaScript Text. Even more genius. Project 1 😀";
+
+// Function to handle logout
+function logout() {
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            // Redirect the user to the homepage after logout
+            console.log("Logged OUT successfully");
+            window.location.href = "/";
+        }
+    }
+    request.open("POST", "/logout");
+    request.send();
 }
+
+// Function to handle register
+function register() {
+    const username = document.getElementById("reg-form-username").value;
+    const password = document.getElementById("reg-form-pass").value;
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            // Handle successful registration response if needed
+            console.log("Registered successfully");
+            window.location.href = "/";
+        }
+    }
+    let formData = [String(username), String(password)];
+    request.open("POST", "/register");
+    request.send(JSON.stringify(formData));
+//    request.send(formData);
+}
+
+// Function to handle login
+function login() {
+    const username = document.getElementById("login-form-username").value;
+    const password = document.getElementById("login-form-pass").value;
+    //const formData = new FormData(document.getElementById("login-form"));
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            // Handle successful login response if needed
+            console.log("Logged in successfully");
+            window.location.href = "/";
+        }
+    }
+    let formData = [String(username), String(password)];
+    request.open("POST", "/login");
+    request.send(JSON.stringify(formData));
+    //request.send(formData);
+}
+
+ document.getElementById("register-form").addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+        register(); // Call register function
+    });
+
+    document.getElementById("login-form").addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+        login(); // Call login function
+    });
+
+    document.getElementById("logout-form").addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+        logout(); // Call logout function
+    });
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//CHAT MESSAGES
+// Function to handle sending chat messages (both text and image)
+function sendChat() {
+    const chatTextBox = document.getElementById("chat-text-box");
+    const message = chatTextBox.value;
+    chatTextBox.value = "";
+
+    // Retrieve XSRF token
+    const xsrf = document.getElementById("xsrf-token").value;
+
+    // Get the uploaded image file
+    const imageFile = document.getElementById("image-upload").files[0];
+
+    // Create a FormData object to send text and image together
+    const formData = new FormData();
+    formData.append('message', message); // Append text message
+    formData.append('image', imageFile); // Append image file
+
+    // Create a new XMLHttpRequest object
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4) {
+            if (this.status === 200) {
+                console.log(this.response);
+                // Display the uploaded image and text message
+                //displayChatMessage(message, URL.createObjectURL(imageFile));
+            } else if (this.status === 403) {
+                console.error("403 Forbidden: Submission rejected");
+            }
+        }
+    }
+
+    request.open("POST", "/chat-messages");
+    request.setRequestHeader("X-XSRF-Token", xsrf);
+    request.send(formData);
+//    request.send(JSON.stringify(formData));
+
+    chatTextBox.focus();
+}
+
+// Add event listener to the "Send" button
+document.getElementById("chat-button").addEventListener("click", function(event) {
+    sendChat(); // Call the sendChat() function when the button is clicked
+});
+
+// Function to display chat message (text and image)
+function displayImage(imageUrl) {
+//    const chatMessages = document.getElementById("chat-messages-section-content");
+//    // creates display line
+//    chatMessages.innerHTML += chatMessageHTML(messageJSON);
+//
+//    const messageDiv = document.createElement("div");
+//    const messageText = document.createElement("p");
+//    messageText.textContent = message;
+//    /*messageDiv.appendChild(messageText);*/
+//    messageDiv.appendChild("Planet: \n");
+    let image;
+    if (imageUrl) {
+        image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "Uploaded Image";
+        image.className = "formatted-image";
+        image.width = 300; // Set the desired width
+        image.height = 200; // Set the desired height
+        //messageDiv.appendChild(image);
+    }
+
+    return image
+//    messageDiv.appendChild("\nReason: \n");
+//    messageDiv.appendChild(messageText);
+//
+//    chatMessages.appendChild(messageDiv);
+//
+//    // Scroll to the bottom of the chat messages
+//    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function upvoteMessage(messageId) {
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            console.log(this.response);
+        }
+    }
+    request.open("POST", "/upvote/" + messageId);
+    request.send();
+}
+
+function downvoteMessage(messageId) {
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            console.log(this.response);
+        }
+    }
+    request.open("POST", "/downvote/" + messageId);
+    request.send();
+}
+
+function clearChat() {
+    const chatMessages = document.getElementById("chat-messages-section-content");
+    chatMessages.innerHTML = "";
+}
+
+
+function createImageUrlFromBase64(base64String) {
+    const binaryString = atob(base64String);
+    const byteArray = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        byteArray[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([byteArray], { type: 'image/jpeg' }); // Adjust the type if needed
+    return URL.createObjectURL(blob);
+}
+
+function chatMessageHTML(messageJSON) {
+    const username = messageJSON.username;
+    const message = messageJSON.message;
+    const messageId = messageJSON.id;
+    const im = messageJSON.img;
+    /*const imagef = displayImage(URL.createObjectURL(im));*/
+    const imageUrl = createImageUrlFromBase64(im);
+    const imageElement = displayImage(imageUrl);
+//    let messageHTML = "<br><span id='message_" + messageId + "'><b>" + username + "</b>: " + message + "</span>";
+    let messageHTML = "<br><span id='message_" + messageId + "'><b>" + username + "</b>: <br> Planet:<br>" + (imageElement ? imageElement.outerHTML : "") + "<br>Reason:<br>" + message + "</span>";
+    messageHTML += "<br><button onclick='upvoteMessage(\"" + messageId + "\")'>Upvote</button> ";
+    /*let messageHTML = "<br><button onclick='upvoteMessage(\"" + messageId + "\")'>Upvote</button> ";
+    messageHTML += "<span id='message_" + messageId + "'><b>" + username + "</b>: " + message + "</span>";*/
+/*
+    messageHTML += "<span id='message_" + messageId + "'><b>" + username + "</b>: \nPlanet: \n" + imagef + "\nReason:\n" + message + "\n</span>";
+*/
+    messageHTML += " <button onclick='downvoteMessage(\"" + messageId + "\")'>Downvote</button><br>";
+//    messageHTML += "<br><button onclick='downvoteMessage(\"" + messageId + "\")'>Downvote</button> \n";
+    return messageHTML;
+}
+
+function addMessageToChat(messageJSON) {
+    const chatMessages = document.getElementById("chat-messages-section-content");
+    //chatMessages.innerHTML += "Here we go"
+    chatMessages.innerHTML += chatMessageHTML(messageJSON);
+//    chatMessages.scrollIntoView(false);
+    chatMessages.scrollTop = chatMessages.scrollHeight - chatMessages.clientHeight;
+//    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function updateChat() {
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            clearChat();
+            const messages = JSON.parse(this.response);
+            for (const message of messages) {
+                addMessageToChat(message);
+            }
+        }
+    }
+    request.open("GET", "/chat-messages");
+    request.send();
+}
+
+
+
+
+
+/*function displayChatMessage(message, imageUrl) {
+    const chatMessages = document.getElementById("chat-messages-section-content");
+    // creates display line
+    chatMessages.innerHTML += chatMessageHTML(messageJSON);
+
+    const messageDiv = document.createElement("div");
+    const messageText = document.createElement("p");
+    messageText.textContent = message;
+    *//*messageDiv.appendChild(messageText);*//*
+    messageDiv.appendChild("Planet: \n");
+    if (imageUrl) {
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "Uploaded Image";
+        messageDiv.appendChild(image);
+    }
+    messageDiv.appendChild("\nReason: \n");
+    messageDiv.appendChild(messageText);
+
+    chatMessages.appendChild(messageDiv);
+
+    // Scroll to the bottom of the chat messages
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}*/
+
+function welcome() {
+    document.getElementById("paragraph").innerHTML += "<br/>We aim to destroy the Justice League and take over the Galaxy. Here is some JavaScript Text. A show of Even more genius. Braniacs Project 1 😀";
+    document.getElementById("chat-messages").innerHTML += "Register and Sign in to get your posts taken seriously. Guest posts are allowed but useless."
+    updateChat();
+    //setInterval(updateChat, 5000);
+
+}
+

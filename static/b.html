@@ -1,24 +1,124 @@
 <html>
 <head>
     <title>CSE312 Project 1</title>
-    <link rel="stylesheet" type="text/css" href="p.css"/>
+    <link rel="stylesheet" type="text/css" href="b.css"/>
     <link rel="icon" type="image/x-icon" href="static/image/favicon.ico"/>
 </head>
 <body onload="welcome();">
 
-<h1>CSE312 Project 1</h1>
+<div class="header">
+<h1>bRANIACS fIRST pROJECT</h1>
+<h3 class="guest">{{Guest}}</h3>
+
+</div>
+<img src="static/image/braniac.png" alt="It is Braniac" class="my_image"/>
+<hr/>
+<br/>
 
 <p id="paragraph">
-    HTML file. Genius. Project 1 🙂
+    Welcome to the Braniacs. This text is from an HTML file. A show of our Genius. Braniacs Project 1 🙂
 </p>
-
-<img src="static/image/kitten.jpg" alt="It's a Kitten" class="my_image"/>
 
 
 <br/>
 <hr/>
 
+<div class="contents">
 
-<script type="application/javascript" src="p.js"></script>
+    <div class="user-list">
+
+
+        Register- Join the Braniacs
+
+        <form id="register-form" action="/register" method="post" enctype="application/x-www-form-urlencoded">
+            <br/>
+            <label>Username:
+                <input id="reg-form-username" type="text" name="username_reg"/>
+            </label>
+            <br/>
+            <label>Password:&nbsp;
+                <input id="reg-form-pass" type="password" name="password_reg">
+            </label>
+            <input type="submit" value="Post">
+        </form>
+
+        Login-
+        Gain access to the bRANIAC SuperCOMPUTER
+
+        <form id="login-form" action="/login" method="post" enctype="application/x-www-form-urlencoded">
+            <br/>
+            <label>Username:
+                <input id="login-form-username" type="text" name="username_login"/>
+            </label>
+            <br/>
+            <label>Password:&nbsp;
+                <input id="login-form-pass" type="password" name="password_login">
+            </label>
+            <input type="submit" value="Post">
+        </form>
+
+        <!--Login with Spotify:
+        <form id="logInWithSpotify-form" action="/logInWithSpotif" method="post">
+            <input type="submit" value="Logout">
+        </form>
+        -->
+
+        Log Out:
+        <form id="logout-form" action="/logout" method="post">
+            <input type="submit" value="Logout">
+        </form>
+
+
+        <!--<form action="/profile-pic" id="image-form" method="post" enctype="multipart/form-data">
+            <br/>
+            <label for="form-file">Change profile picture: </label>
+            <input id="form-file" type="file" name="upload">
+            <br/>
+            <input type="submit" value="Post">
+        </form>
+        -->
+
+
+
+    </div>
+
+
+
+</div>
+
+<div class="chat-messages-section">
+        <div id="chat-messages-section-content"></div>
+
+</div>
+
+
+<input type="hidden" id="xsrf-token" name="xsrf_token" value="{{xsrfToken}}">
+
+
+<div class="chat">
+    <div id="chat-messages"></div>
+
+    <div class="chat-form">
+        <hr>
+        <label>
+            Chat:
+            <input id="chat-text-box" type="text">
+        </label>
+        <!-- Add input for uploading images -->
+        <label for="image-upload">Upload Image:</label>
+        <input type="file" id="image-upload" accept="image/*">
+<!--        <button id="chat-button" onclick="sendChat()">Send</button>-->
+        <button id="chat-button">Send</button>
+    </div>
+
+
+
+
+</div>
+
+
+
+
+<script type="application/javascript" src="b.js"></script>
 </body>
 </html>
