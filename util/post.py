@@ -1,10 +1,6 @@
-import json
 import bcrypt
 import secrets
 import hashlib
-
-# import util.auth
-# from util.errors import Errors
 from util.user_exists import User_Exists
 
 
@@ -15,58 +11,34 @@ def stop_html_injection(w):
     return u
 
 
-def split_body_register_and_login(body):
-    body = body.decode()
-    split_on_ampersand = body.split('&')
-    username = split_on_ampersand[0].split('=')
-    username = username[1]
-    password = split_on_ampersand[1].split('=')
-    password = password[1]
-    return username, password
-
-
 def register(request_data_list, user_collection):
-    # usernameANDpassword = util.auth.extract_credentials(request.body)
     username = request_data_list[0]
     password = request_data_list[1]
-    print("UPUPUPUPUP: ", username, password)
-    # username, password = split_body_register_and_login(request.body)
-    # username, password = split_body_register_and_login(request.body)
-    # username, password = split_body_register_and_login(request.body)
-    # print("username: ", username)
-    username = stop_html_injection(username)
-    # username = util.auth.extract_credentials(username)
-    # print("username: ", username)
-    password = stop_html_injection(password)
-    # password = util.auth.extract_credentials(password)
+    password2 = request_data_list[2]
 
-    # checks if password follows defined conventions
-    # if util.auth.validate_password(password) is False:
-    #     print("Bad Password")
-    #     # disp = "Password should have at least:\n 8 characters\n 1 number\n 1 lower case letter\n 1 upper case letter\n 1of these special characters: {'!', '@', '#', '$', '%', '^', '&', '(', ')', '-', '_', '='}\nNo other characters must be used except the ones stated above."
-    #     # return Errors("404", disp, request).error
-    #     response = f"HTTP/1.1 302 REDIRECT\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/html; charset=utf-8\r\nLocation: /\r\n\r\n"
-    #     return response
+    if password == password2:
+        username = stop_html_injection(username)
+        password = stop_html_injection(password)
 
-    # username availability
-    is_username_available = user_collection.find_one({"username": username})
+        # username availability
+        is_username_available = user_collection.find_one({"username": username})
 
-    if is_username_available is None:
-        # salt & hash
-        print("Good Password")
-        salt = bcrypt.gensalt()
-        password = bcrypt.hashpw(password.encode(), salt)
+        if is_username_available is None:
+            # salt & hash
+            print("Good Password")
+            salt = bcrypt.gensalt()
+            password = bcrypt.hashpw(password.encode(), salt)
 
-        # set xsrf
-        xsrf_token = secrets.token_urlsafe(30)
+            # set xsrf
+            xsrf_token = secrets.token_urlsafe(30)
 
-        user_collection.insert_one({'username': username, 'password': password, "xsrf_token": xsrf_token})
-        print("I have registered")
-        # response = f"HTTP/1.1 200 OK\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nYou are now a registered user!!!"
-        # response = f"HTTP/1.1 302 REDIRECT\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/html; charset=utf-8\r\nLocation: /\r\n\r\n"
-        response = "Registration SuccessfuL"
+            user_collection.insert_one({'username': username, 'password': password, "xsrf_token": xsrf_token})
+            print("I have registered")
+            response = "Registration SuccessfuL"
+        else:
+            response = "Username tAKEN"
     else:
-        response = "Username tAKEN"
+        response = "Passwords do not MMATCH!!!"
 
     return response
 
@@ -74,54 +46,26 @@ def register(request_data_list, user_collection):
 def login(request_data_list, user_collection):
     username = request_data_list[0]
     password = request_data_list[1]
-    # usernameANDpassword = util.auth.extract_credentials(request.body)
-    # username = usernameANDpassword[0]
-    # password = usernameANDpassword[1]
-    print("UPUPUPUPUP2: ", username, password)
-    # username, password = split_body_register_and_login(request.body)
-    # print("username: ", username)
+
     username = stop_html_injection(username)
-    # username = util.auth.extract_credentials(username)
-    # print("username: ", username)
     password = stop_html_injection(password)
-    # password = util.auth.extract_credentials(password)
-    # check if username exists
-    # {"_id": 0} drops id so code doesn't error
-    response = ""
+
     datat = user_collection.find_one({"username": username}, {"_id": 0})
     if datat is not None:
         print("Found")
         datati = datat['password']
         right_pass = bcrypt.checkpw(password.encode(), datati)
         if right_pass is True:
-            # set xsrf token
-            # xsrf_token = secrets.token_urlsafe(30)
-
-            # xsrf_token = datat["xsrf_token"]
-            # f = open('public/index.html', encoding='utf-8')
-            # f1 = f.read()
-            # f1 = f1.replace('{{xsrfToken}}', str(xsrf_token))
-            # f.close()
             print("datat['xsrf_token']: ", datat["xsrf_token"])
             auth_token = secrets.token_urlsafe(20)
-            # response = f"HTTP/1.1 200 OK\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/plain; charset=utf-8\r\nSet-Cookie: Auth-Token={auth_token}; Max-Age=3600; HttpOnly\r\n\r\nYou have been logged in!!!"
-            # response = f"HTTP/1.1 302 REDIRECT\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/html; charset=utf-8\r\nSet-Cookie: Auth-Token={auth_token}; Max-Age=3600; HttpOnly\r\nLocation: /\r\n\r\n"     # Content-Length: {len(f1.encode())}\r\nLocation: /\r\n\r\n{f1}"
-            #
+
             hashed_auth_token = hashlib.sha256(auth_token.encode()).hexdigest()
-            # user_databasee0.insert_one({"Auth-Token": hashed_auth_token})
             user_collection.update_one({'username': username}, {"$set": {'Auth-Token': hashed_auth_token}})
             response = {'Auth-Token': auth_token}
         else:
-            print("Bad pASSWORD 2")
-            # disp = "Username does not exist, or password does not match1"
-            # response = Errors("404", disp, request).error
-            # response = f"HTTP/1.1 302 REDIRECT\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/html; charset=utf-8\r\nLocation: /\r\n\r\n"     # Content-Length: {len(f1.encode())}\r\nLocation: /\r\n\r\n{f1}"
             response = "Incorrect Password"
     else:
-        print("Not Found")
-        # disp = "Username does not exist, or password does not match2"
-        # response = Errors("404", disp, request).error
-        # response = f"HTTP/1.1 302 REDIRECT\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/html; charset=utf-8\r\nLocation: /\r\n\r\n"  # Content-Length: {len(f1.encode())}\r\nLocation: /\r\n\r\n{f1}"
+
         response = "Username not fOUND"
 
     return response
@@ -130,8 +74,6 @@ def login(request_data_list, user_collection):
 #
 #
 def logout(request, user_collection):
-    # response = f"HTTP/1.1 302 REDIRECT\r\nX-Content-Type-Options: nosniff\r\nContent-Type: text/html; charset=utf-8\r\nSet-Cookie: Auth-Token=None; Max-Age=3600; HttpOnly\r\nLocation: /\r\n\r\n"
-
     print("Cookies: ", request.cookies)
     Auth = request.cookies.get('Auth-Token')
     print("Auth: ", Auth)
@@ -158,14 +100,11 @@ def logout(request, user_collection):
 
 def chat_messages(request, chat_collection, counter, user_collection):
     the_message = request.form.get('message')
+    the_message = stop_html_injection(the_message)
     the_image = request.files['image']
     the_image = the_image.read()
     user_exists = User_Exists(request, user_collection).user_exists
-    # message_dict = json.loads(request.body)
-    # the_message = stop_html_injection(message_dict["message"])
-    # print("message dict: ", message_dict, "type(message_dict): ", type(message_dict))
-    # print(".val:", message_dict["message"])
-    print("user_exists: ", user_exists)
+
     if user_exists is not None:
         print("request.headers.get('X-XSRF-Token'): ", request.headers.get('X-XSRF-Token'))
         print("user_exists['xsrf_token']: ", user_exists['xsrf_token'])
@@ -175,24 +114,15 @@ def chat_messages(request, chat_collection, counter, user_collection):
                 {"username": user_exists["username"], "message": the_message,
                  'identification': message_id["identification"], "image": the_image, "Upvote": 0, "Downvote": 0,
                  "NameList": []})
-            # # Updating Code for the AO
-            # body = {"username": user_exists["username"], "message": the_message,
-            #         'identification': message_id["identification"]}
-            # body = json.dumps(body)
-            # response = f"HTTP/1.1 201 Created\r\nX-Content-Type-Options: nosniff\r\n\r\n{body}"
             response = "User message saved to database"
         else:
             response = "Bad Token"
-            # response = f"HTTP/1.1 403 Forbidden\r\nX-Content-Type-Options: nosniff\r\nContent-Length: {len(disp.encode())}\r\n\r\n{disp}"
+
 
     else:
         chat_collection.insert_one(
             {"username": "Guest", "message": the_message, 'identification': 0, "image": the_image})
         print("I inserted into chat_collect")
-        # Updating Code for the AO
-        # body = {"username": "Guest", "message": the_message, 'identification': 0, "image": the_image}
-        # body = json.dumps(body)
-        # response = f"HTTP/1.1 201 Created\r\nX-Content-Type-Options: nosniff\r\n\r\n{body}"
         response = "Guest message saved to database"
 
     return response
@@ -208,7 +138,6 @@ def upvote(chat_collection, user_collection, request):
             if chat_exists is not None:
                 username = user_exists["username"]
                 if username not in chat_exists["NameList"]:
-
                     # chat_exists["Upvote"] = int(chat_exists["Upvote"]) + 1
                     # chat_exists["NameList"].append(username)
                     Upvote = int(chat_exists["Upvote"]) + 1
@@ -278,4 +207,3 @@ class Post:
 
         elif '/downvote' in request_path:
             self.response = downvote(chat_collection, user_collection, request)
-

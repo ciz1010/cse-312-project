@@ -17,6 +17,7 @@ function logout() {
 function register() {
     const username = document.getElementById("reg-form-username").value;
     const password = document.getElementById("reg-form-pass").value;
+    const password2 = document.getElementById("reg-form-pass2").value;
     const request = new XMLHttpRequest();
     request.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
@@ -25,7 +26,7 @@ function register() {
             window.location.href = "/";
         }
     }
-    let formData = [String(username), String(password)];
+    let formData = [String(username), String(password), String(password2)];
     request.open("POST", "/register");
     request.send(JSON.stringify(formData));
 //    request.send(formData);
@@ -91,6 +92,7 @@ function sendChat() {
         if (this.readyState === 4) {
             if (this.status === 200) {
                 console.log(this.response);
+                window.location.href = "/";
                 // Display the uploaded image and text message
                 //displayChatMessage(message, URL.createObjectURL(imageFile));
             } else if (this.status === 403) {
@@ -114,15 +116,6 @@ document.getElementById("chat-button").addEventListener("click", function(event)
 
 // Function to display chat message (text and image)
 function displayImage(imageUrl) {
-//    const chatMessages = document.getElementById("chat-messages-section-content");
-//    // creates display line
-//    chatMessages.innerHTML += chatMessageHTML(messageJSON);
-//
-//    const messageDiv = document.createElement("div");
-//    const messageText = document.createElement("p");
-//    messageText.textContent = message;
-//    /*messageDiv.appendChild(messageText);*/
-//    messageDiv.appendChild("Planet: \n");
     let image;
     if (imageUrl) {
         image = document.createElement("img");
@@ -131,17 +124,9 @@ function displayImage(imageUrl) {
         image.className = "formatted-image";
         image.width = 300; // Set the desired width
         image.height = 200; // Set the desired height
-        //messageDiv.appendChild(image);
-    }
 
+    }
     return image
-//    messageDiv.appendChild("\nReason: \n");
-//    messageDiv.appendChild(messageText);
-//
-//    chatMessages.appendChild(messageDiv);
-//
-//    // Scroll to the bottom of the chat messages
-//    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 function upvoteMessage(messageId) {
@@ -149,6 +134,7 @@ function upvoteMessage(messageId) {
     request.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
             console.log(this.response);
+            window.location.href = "/";
         }
     }
     request.open("POST", "/upvote/" + messageId);
@@ -160,6 +146,7 @@ function downvoteMessage(messageId) {
     request.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
             console.log(this.response);
+            window.location.href = "/";
         }
     }
     request.open("POST", "/downvote/" + messageId);
@@ -187,18 +174,20 @@ function chatMessageHTML(messageJSON) {
     const message = messageJSON.message;
     const messageId = messageJSON.id;
     const im = messageJSON.img;
+    const upv = messageJSON.upv
+    const dwv = messageJSON.dwv
     /*const imagef = displayImage(URL.createObjectURL(im));*/
     const imageUrl = createImageUrlFromBase64(im);
     const imageElement = displayImage(imageUrl);
 //    let messageHTML = "<br><span id='message_" + messageId + "'><b>" + username + "</b>: " + message + "</span>";
-    let messageHTML = "<br><span id='message_" + messageId + "'><b>" + username + "</b>: <br> Planet:<br>" + (imageElement ? imageElement.outerHTML : "") + "<br>Reason:<br>" + message + "</span>";
-    messageHTML += "<br><button onclick='upvoteMessage(\"" + messageId + "\")'>Upvote</button> ";
+    let messageHTML = "<br><span id='message_" + messageId + "'><b>" + username + "</b>: <br> Planet:<br>" + (imageElement ? imageElement.outerHTML : "") + "<br>Reasononing:<br>" + message + "</span>";
+    messageHTML += "<br><button onclick='upvoteMessage(\"" + messageId + "\")'>Upvote</button> " + upv + " ";
     /*let messageHTML = "<br><button onclick='upvoteMessage(\"" + messageId + "\")'>Upvote</button> ";
     messageHTML += "<span id='message_" + messageId + "'><b>" + username + "</b>: " + message + "</span>";*/
 /*
     messageHTML += "<span id='message_" + messageId + "'><b>" + username + "</b>: \nPlanet: \n" + imagef + "\nReason:\n" + message + "\n</span>";
 */
-    messageHTML += " <button onclick='downvoteMessage(\"" + messageId + "\")'>Downvote</button><br>";
+    messageHTML += " <button onclick='downvoteMessage(\"" + messageId + "\")'>Downvote</button> " + dwv + "<br>";
 //    messageHTML += "<br><button onclick='downvoteMessage(\"" + messageId + "\")'>Downvote</button> \n";
     return messageHTML;
 }
@@ -208,8 +197,8 @@ function addMessageToChat(messageJSON) {
     //chatMessages.innerHTML += "Here we go"
     chatMessages.innerHTML += chatMessageHTML(messageJSON);
 //    chatMessages.scrollIntoView(false);
-    chatMessages.scrollTop = chatMessages.scrollHeight - chatMessages.clientHeight;
-//    chatMessages.scrollTop = chatMessages.scrollHeight;
+//    chatMessages.scrollTop = chatMessages.scrollHeight - chatMessages.clientHeight;
+    chatMessages.scrollTop = chatMessages.scrollHeight + 30;
 }
 function updateChat() {
     const request = new XMLHttpRequest();
@@ -257,9 +246,13 @@ function updateChat() {
 
 function welcome() {
     document.getElementById("paragraph").innerHTML += "<br/>We aim to destroy the Justice League and take over the Galaxy. Here is some JavaScript Text. A show of Even more genius. Braniacs Project 1 😀";
-    document.getElementById("chat-messages").innerHTML += "Register and Sign in to get your posts taken seriously. Guest posts are allowed but useless."
+    document.getElementById("paragraph").innerHTML += "<br/>Upload an image of a Planet and Enter text explaining why you think that planet's capture is feasible and useful to our cause";
+    document.getElementById("paragraph").innerHTML += "<br/>The other Braniacs will Upvote or Downvote as they see fit.";
+
+
+    document.getElementById("chat-messages").innerHTML += "Register and Sign in to post. Guest posts are NOT allowed and will return errors. You can only vote once per message. Vote wisely."
     updateChat();
-    //setInterval(updateChat, 5000);
+    setInterval(updateChat, 10000);
 
 }
 
