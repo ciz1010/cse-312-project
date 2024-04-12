@@ -238,20 +238,26 @@ def serve_static_file(filename):
     mimetype = get_mimetype('.' + filename.split('.')[-1])  # Extract file extension
     return send_from_directory(directory, filename, mimetype=mimetype)
 
+# Want to handle the websocket connection
+
 @socketio.on('connect')
 def connected():
     print('Client connected')
+    #let em know you connecting
 
-# Want to handle the websocket
+
+# Want to handle the websocket disconnect
 @socketio.on('disconnect')
 def disconnected():
     print('Client disconnected')
+    #let em know you disconnecting
+
 
 #When client sends a message
 @socketio.on('message')
 def messagecoming(data):
     socketio.emit('clientsent', {'message': 'Got your message!'})
-
+#tells client the message is got
 # Route to get chat messages
 @app.route('/chat-messages', methods=['GET'])
 def get_chat_messages():
