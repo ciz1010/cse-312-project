@@ -1,4 +1,17 @@
+var socket = io();
 
+socket.on('disconnect', function() {
+    console.log('Disconnecting');
+});
+socket.on('connect', function() {
+    console.log('Connecting');
+});
+
+// Receive messages from the server
+socket.on('message', function(message) {
+    console.log('Message received:', message);
+    displayMessage(message);
+});
 // Function to handle logout
 function logout() {
     const request = new XMLHttpRequest();

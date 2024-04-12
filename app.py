@@ -171,6 +171,7 @@
 # was able to trim code inn a couple of hours. Still a little attached to my previous implementation though ^
 
 from flask import Flask, make_response, send_from_directory, request, Response
+from flask_socketio import SocketIO
 from pymongo import MongoClient
 import json
 from util.post import Post
@@ -178,6 +179,7 @@ from util.get import Get
 from util.user_exists import User_Exists
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 mongo_client = MongoClient("mongo")  # "mongo", 27017)
 db = mongo_client["pROJECTbRANIAC"]
@@ -235,6 +237,20 @@ def serve_static_file(filename):
     # file_path = directory + '/' + filename
     mimetype = get_mimetype('.' + filename.split('.')[-1])  # Extract file extension
     return send_from_directory(directory, filename, mimetype=mimetype)
+
+@socketio.on('connect')
+def connected():
+    print('Client connected')
+
+# Want to handle the websocket
+@socketio.on('disconnect')
+def disconnected():
+    print('Client disconnected')
+
+#When client sends a message
+@socketio.on('message')
+def messagecoming(data):
+    socketio.emit('clientsent', {'message': 'Got your message!'})
 
 # Route to get chat messages
 @app.route('/chat-messages', methods=['GET'])
@@ -295,7 +311,9 @@ def up_vote(vote_id):
     return post_response.response
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080, host='0.0.0.0')
+    #app.run(debug=True, port=8080, host='0.0.0.0')
+    socketio.run(app, debug=True, port=8080, host='0.0.0.0',  allow_unsafe_werkzeug=True)
+
 
 
 
