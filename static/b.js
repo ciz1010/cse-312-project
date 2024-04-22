@@ -10,7 +10,7 @@ socket.on('connect', function() {
 // Receive messages from the server
 socket.on('message', function(message) {
     console.log('Message received:', message);
-    displayMessage(message);
+    displayImage(message);
 });
 // Function to handle logout
 function logout() {
