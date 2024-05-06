@@ -1,16 +1,19 @@
-var socket = io();
+import { Server } from "socket.io";
+
+const io = new Server({maxHttpBufferSize: 1e8});
+var socket = io;
 
 socket.on('disconnect', function() {
-    console.log('Disconnecting');
+    console.log('Disconnected');
 });
 socket.on('connect', function() {
-    console.log('Connecting');
+    console.log('Connected');
 });
 
 // Receive messages from the server
 socket.on('message', function(message) {
     console.log('Message received:', message);
-    displayMessage(message);
+    addMessageToChat(message);
 });
 // Function to handle logout
 function logout() {
@@ -265,7 +268,7 @@ function welcome() {
 
     document.getElementById("chat-messages").innerHTML += "Register and Sign in to post. Guest posts are NOT allowed and will return errors. You can only vote once per message. Vote wisely."
     updateChat();
-    setInterval(updateChat, 10000);
+   // setInterval(updateChat, 10000);
 
 }
 
