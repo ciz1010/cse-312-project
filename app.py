@@ -174,8 +174,11 @@ from flask import Flask, make_response, send_from_directory, request, Response
 from flask_socketio import SocketIO
 from pymongo import MongoClient
 import json
+from threading import Thread
+import base64
 from collections import defaultdict
 import time
+import util.websockets as websockets
 from util.post import Post
 from util.get import Get
 from util.user_exists import User_Exists
@@ -189,6 +192,8 @@ chat_collection = db["chat"]
 user_collection = db["user"]
 counter = db["count"]
 counter.insert_one({"identification": 1})
+socketUser = "" # used to have the username of the current user for websocket messages
+ACTIVE_USERS = {} # ACTIVE_USERS[user] = seconds they've been on the server
 IPS = defaultdict(lambda: {'requestTimestamps': [], 'timeBlocked': 0}) # dict that stores the amount of requests and the timestamps for each request for each ip_address address
 MAX_REQUESTS = 50
 REQUEST_WINDOW = 10
@@ -243,14 +248,10 @@ def serve_error():
     f1 = f.read()
     response = make_response(f1, 429)
     return response
-# Define a function to set the X-Content-Type-Options header for all responses
-@app.after_request
-def add_header(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    return response
 
 @app.route('/')
 def serve_homepage():
+    global socketUser
     # Load and return the homepage HTML file
     f = open('static/b.html', encoding='utf-8')
     f1 = f.read()
@@ -260,12 +261,14 @@ def serve_homepage():
         username = user_exists['username']
         f1 = f1.replace('{{xsrfToken}}', str(xsrf_token))
         f1 = f1.replace('{{Guest}}', str(username))
+        socketUser = str(username)
     else:
         f1 = f1.replace('{{Guest}}', "Guest")
+        socketUser = "Guest"
 
     # Create response with headers
     response = Response(f1, mimetype='text/html')
-    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # response.headers['X-Content-Type-Options'] = 'nosniff'
 
     return response
 
@@ -282,20 +285,40 @@ def serve_static_file(filename):
 @socketio.on('connect')
 def connected():
     print('Client connected')
+    if socketUser != "Guest" and socketUser != "":
+        if socketUser not in ACTIVE_USERS:
+            ACTIVE_USERS[socketUser] = 0
     #let em know you connecting
-
 
 # Want to handle the websocket disconnect
 @socketio.on('disconnect')
 def disconnected():
     print('Client disconnected')
+    if socketUser in ACTIVE_USERS:
+        # print(f'this is the user: {socketUser}')
+        del ACTIVE_USERS[socketUser]
     #let em know you disconnecting
 
-
 #When client sends a message
-@socketio.on('message')
+@socketio.on('clientSent')
 def messagecoming(data):
-    socketio.emit('clientsent', {'message': 'Got your message!'})
+    image = data['image']
+    data['image'] = base64.b64decode(image)
+    socketData = websockets.parseMessage(socketUser, chat_collection, data, counter)
+    socketio.emit('serverSent', socketData)
+
+@socketio.on('get-active-users')
+def send_active_users():
+    socketio.emit('update-active-users', ACTIVE_USERS)
+
+def update_active_users():
+    while True:
+        # print("hit")
+        for user in ACTIVE_USERS:
+            ACTIVE_USERS[user] += 1
+        socketio.emit('update-active-users', ACTIVE_USERS)
+        time.sleep(1)
+
 #tells client the message is got
 # Route to get chat messages
 @app.route('/chat-messages', methods=['GET'])
@@ -356,7 +379,11 @@ def up_vote(vote_id):
     return post_response.response
 
 if __name__ == '__main__':
-    #app.run(debug=True, port=8080, host='0.0.0.0')
+    update_active_users_thread = Thread(target=update_active_users)
+    update_active_users_thread.daemon = True  # this is so thar the thread closes when the server closes
+    update_active_users_thread.start()
+
+    # app.run(debug=True, port=8080, host='0.0.0.0')
     socketio.run(app, debug=True, port=8080, host='0.0.0.0',  allow_unsafe_werkzeug=True)
 
 

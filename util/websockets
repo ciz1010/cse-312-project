@@ -1,0 +1,31 @@
+from util.post import stop_html_injection
+import base64
+
+def parseMessage(username, chat_collection, data, counter):
+    the_message = data.get('message')
+    the_message = stop_html_injection(the_message)
+    the_image = data.get('image')
+    message_id = counter.find_one_and_update({}, {"$inc": {"identification": 1}})
+    messageDict = {
+        "username": username,
+        "message": the_message,
+        'identification': message_id["identification"],
+        "image": the_image,
+        "Upvote": 0,
+        "Downvote": 0,
+        "NameList": []
+         }
+    chat_collection.insert_one(dict(messageDict))
+    image_data = base64.b64encode(messageDict['image']).decode()
+    responseDict = {
+        "messageType": 'chatMessage',
+        "username": messageDict["username"],
+        "message": messageDict["message"],
+        "id": messageDict["identification"], 
+        "img": image_data, 
+        "upv": messageDict["Upvote"], 
+        "dwv": messageDict["Downvote"]
+        }
+    return responseDict
+    
+    
