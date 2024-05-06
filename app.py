@@ -184,7 +184,7 @@ from util.get import Get
 from util.user_exists import User_Exists
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 mongo_client = MongoClient("mongo")  # "mongo", 27017)
 db = mongo_client["pROJECTbRANIAC"]
