@@ -174,6 +174,8 @@ from flask import Flask, make_response, send_from_directory, request, Response
 from flask_socketio import SocketIO
 from pymongo import MongoClient
 import json
+from collections import defaultdict
+import time
 from util.post import Post
 from util.get import Get
 from util.user_exists import User_Exists
@@ -187,6 +189,10 @@ chat_collection = db["chat"]
 user_collection = db["user"]
 counter = db["count"]
 counter.insert_one({"identification": 1})
+IPS = defaultdict(lambda: {'requestTimestamps': [], 'timeBlocked': 0}) # dict that stores the amount of requests and the timestamps for each request for each ip_address address
+MAX_REQUESTS = 50
+REQUEST_WINDOW = 10
+TIMEOUT = 30
 
 def get_mimetype(file_extension):
     mime_types = {
@@ -202,13 +208,46 @@ def get_mimetype(file_extension):
     }
     return mime_types.get(file_extension.lower(), 'application/octet-stream')
 
-
 # Define a function to set the X-Content-Type-Options header for all responses
 @app.after_request
 def add_header(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
+# Function to check if an IP address is blocked
+def checkIPBlocked(ip_address):
+    current_time = time.time()
+    return IPS[ip_address]['timeBlocked'] > current_time
+
+@app.before_request
+def limit_ip():
+    ip_address = request.headers["X-Real-IP"]
+    
+    if checkIPBlocked(ip_address):
+        return serve_error()
+    
+    ip_info = IPS[ip_address]
+    # this removes all the timestamps that are not within the window
+    ip_info['requestTimestamps'] = [timE for timE in ip_info['requestTimestamps'] if time.time() - timE <= REQUEST_WINDOW] 
+
+    num_of_requests_in_window = len(ip_info['requestTimestamps'])
+    
+    if num_of_requests_in_window > MAX_REQUESTS:
+        ip_info['timeBlocked'] = time.time() + TIMEOUT
+        return serve_error()
+    
+    ip_info['requestTimestamps'].append(time.time()) 
+
+def serve_error():
+    f = open('nginx/error.html', encoding='utf-8')
+    f1 = f.read()
+    response = make_response(f1, 429)
+    return response
+# Define a function to set the X-Content-Type-Options header for all responses
+@app.after_request
+def add_header(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 @app.route('/')
 def serve_homepage():
